@@ -4,3 +4,5 @@
 out/
 CMakeLists.txt.user
 CMakeUserPresets.json
+CMakeFiles/
+cmake-build-debug/
