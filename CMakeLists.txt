@@ -8,10 +8,18 @@ project(
 	LANGUAGES CXX
 )
 
-add_executable(connect4 "src/connect4.cpp")
+find_package(SDL2 CONFIG REQUIRED)
+
+add_executable(connect4 "src/main.cpp" "include/grid.hpp" "src/grid.cpp" "include/game.hpp" "src/game.cpp")
 
 if(CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET connect4 PROPERTY CXX_STANDARD 20)
 endif()
 
-target_compile_features(connect4 PRIVATE cxx_std_20)
+target_include_directories(connect4 PUBLIC "include/")
+
+target_link_libraries(connect4 
+	PRIVATE 
+	$<TARGET_NAME_IF_EXISTS:SDL2::SDL2main> 
+	$<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
+)
