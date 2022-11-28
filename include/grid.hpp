@@ -1,39 +1,41 @@
-#ifndef GRID_HPP
-#define GRID_HPP
+#ifndef CONNECT4_GRID_HPP
+#define CONNECT4_GRID_HPP
 
 #include <vector>
+
+enum class Disc
+{
+  RED,
+  YELLOW,
+  EMPTY
+};
 
 class Grid
 {
 public:
-  Grid(int rows, int columns);
+  Grid(int rows, int columns)
+      : m_rows(rows)
+      , m_columns(columns)
+      , m_discs(rows, std::vector(columns, Disc::EMPTY))
+  {}
 
   [[nodiscard]] bool is_full() const;
 
-  int rows() const
+  [[nodiscard]] int rows() const
   {
     return m_rows;
   };
 
-  int columns() const
+  [[nodiscard]] int columns() const
   {
     return m_columns;
   }
 
-  enum class Disc
-  {
-    RED,
-    YELLOW,
-    EMPTY
-  };
-
   [[nodiscard]] Disc get_disc(int row, int column) const;
 
-  const std::vector<std::vector<Disc>>& get_discs() const;
+  bool drop_disc(int col, Disc disc);
 
-  bool drop_disc(int column, Disc disc);
-
-  bool are_four_connected() const;
+  [[nodiscard]] bool are_four_connected(Disc disc) const;
 
 private:
   const int m_rows;
@@ -41,4 +43,4 @@ private:
   std::vector<std::vector<Disc>> m_discs;
 };
 
-#endif
+#endif  // CONNECT4_GRID_HPP

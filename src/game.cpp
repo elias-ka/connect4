@@ -1,13 +1,11 @@
-#include <cstdint>
 #include <iostream>
 
 #include "game.hpp"
 
 #include <SDL.h>
 
-Game::Game(const int grid_rows,
-           const int grid_columns)
-  : m_grid(grid_rows, grid_columns)
+Game::Game(const int grid_rows, const int grid_columns)
+    : m_grid(grid_rows, grid_columns)
 {
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     std::cerr << "Unable to initialize SDL: " << SDL_GetError() << '\n';
@@ -16,21 +14,13 @@ Game::Game(const int grid_rows,
   const int width = m_grid.columns() * 100;
   const int height = m_grid.rows() * 100;
 
-  m_window = SDL_CreateWindow("Connect 4",
-                              SDL_WINDOWPOS_CENTERED,
-                              SDL_WINDOWPOS_CENTERED,
-                              width,
-                              height,
-                              0);
+  m_window = SDL_CreateWindow("Connect 4", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, 0);
 
   if (!m_window) {
     std::cerr << "Could not create window, SDL_Error: " << SDL_GetError() << '\n';
   }
 
-  m_renderer = SDL_CreateRenderer(m_window,
-                                  -1,
-                                  SDL_RENDERER_ACCELERATED |
-                                  SDL_RENDERER_PRESENTVSYNC);
+  m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_PRESENTVSYNC);
   if (!m_renderer) {
     std::cerr << "Could not create renderer, SDL_Error: " << SDL_GetError() << '\n';
   }
@@ -46,8 +36,19 @@ Game::~Game()
 void Game::run()
 {
   while (m_running) {
-    draw_grid();
+    using enum Game::State;
     poll_events();
+    update_window_title();
+    draw_grid();
+    if (m_game_state == PLAYING) {
+      if (m_grid.are_four_connected(Disc::YELLOW)) {
+        m_game_state = YELLOW_WIN;
+      } else if (m_grid.are_four_connected(Disc::RED)) {
+        m_game_state = RED_WIN;
+      } else if (m_grid.is_full()) {
+        m_game_state = DRAW;
+      }
+    }
   }
 }
 
@@ -67,16 +68,17 @@ void Game::draw_grid() const
       const int y = row * 100 + margin;
 
       switch (m_grid.get_disc(row, column)) {
-        case Grid::Disc::RED: {
-          draw_disc(m_renderer, x, y, disc_width, disc_height, SDL_Color{255, 0, 0, 255});
+        using enum Disc;
+        case RED: {
+          draw_disc(m_renderer, x, y, disc_width, disc_height, SDL_Color {255, 0, 0, 255});
           break;
         }
-        case Grid::Disc::YELLOW: {
-          draw_disc(m_renderer, x, y, disc_width, disc_height, SDL_Color{255, 255, 0, 255});
+        case YELLOW: {
+          draw_disc(m_renderer, x, y, disc_width, disc_height, SDL_Color {255, 255, 0, 255});
           break;
         }
-        case Grid::Disc::EMPTY: {
-          draw_disc(m_renderer, x, y, disc_width, disc_height, SDL_Color{40, 50, 60, 255});
+        case EMPTY: {
+          draw_disc(m_renderer, x, y, disc_width, disc_height, SDL_Color {40, 50, 60, 255});
           break;
         }
       }
@@ -86,53 +88,80 @@ void Game::draw_grid() const
   SDL_RenderPresent(m_renderer);
 }
 
-void Game::draw_disc(SDL_Renderer* renderer,
-                     const int x,
-                     const int y,
-                     const int w,
-                     const int h,
-                     const SDL_Color color)
+void Game::draw_disc(SDL_Renderer* renderer, const int x, const int y, const int w, const int h, const SDL_Color color)
 {
   SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-  const SDL_Rect rect{x, y, w, h};
+  const SDL_Rect rect {x, y, w, h};
   SDL_RenderFillRect(renderer, &rect);
 }
 
 void Game::poll_events()
 {
   SDL_Event event;
-  while (SDL_PollEvent(&event)) {
-    switch (event.type) {
-      case SDL_QUIT:
-        m_running = false;
-        break;
+  while (SDL_PollEvent(&event) != 0) {
+    if (event.type == SDL_QUIT) {
+      m_running = false;
+    }
 
-      case SDL_KEYDOWN: {
-        switch (event.key.keysym.sym) {
-          case SDLK_1:
-          case SDLK_2:
-          case SDLK_3:
-          case SDLK_4:
-          case SDLK_5:
-          case SDLK_6:
-          case SDLK_7: {
-            m_grid.drop_disc(event.key.keysym.sym - SDLK_1, Grid::Disc::YELLOW);
-            break;
-          }
-          case SDLK_ESCAPE: {
-            m_running = false;
-            break;
-          }
-          default:
-            break;
+    if (event.type == SDL_MOUSEBUTTONDOWN) {
+      const int column = event.button.x / 100;
+      handle_turn(column);
+    }
+
+    if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
+      switch (event.key.keysym.sym) {
+        case SDLK_1:
+        case SDLK_2:
+        case SDLK_3:
+        case SDLK_4:
+        case SDLK_5:
+        case SDLK_6:
+        case SDLK_7: {
+          handle_turn(event.key.keysym.sym - SDLK_1);
+          break;
         }
-        break;
+        case SDLK_ESCAPE: {
+          m_running = false;
+          break;
+        }
+        default:
+          break;
       }
+    }
+  }
+}
 
-      case SDL_MOUSEBUTTONDOWN:
-        const int column = event.button.x / 100;
-        m_grid.drop_disc(column, Grid::Disc::YELLOW);
-        break;
+void Game::update_window_title() const
+{
+  switch (m_game_state) {
+    case State::PLAYING: {
+      if (m_turn == Turn::YELLOW) {
+        SDL_SetWindowTitle(m_window, "Connect 4 - Yellow's turn");
+      } else {
+        SDL_SetWindowTitle(m_window, "Connect 4 - Red's turn");
+      }
+      break;
+    }
+    case State::YELLOW_WIN: {
+      SDL_SetWindowTitle(m_window, "Connect 4 - Yellow won!");
+      break;
+    }
+    case State::RED_WIN: {
+      SDL_SetWindowTitle(m_window, "Connect 4 - Red won!");
+      break;
+    }
+    case State::DRAW: {
+      SDL_SetWindowTitle(m_window, "Connect 4 - Draw!");
+      break;
+    }
+  }
+}
+
+void Game::handle_turn(int column)
+{
+  if (m_game_state == State::PLAYING) {
+    if (m_grid.drop_disc(column, m_turn == Turn::YELLOW ? Disc::YELLOW : Disc::RED)) {
+      m_turn = m_turn == Turn::YELLOW ? Turn::RED : Turn::YELLOW;
     }
   }
 }
