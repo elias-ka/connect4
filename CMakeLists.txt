@@ -8,21 +8,21 @@ project(
 	LANGUAGES CXX
 )
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 	set(CMAKE_CXX_EXTENSIONS OFF)
 	set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 endif()
 
-find_package(SDL2 CONFIG REQUIRED)
+include(FindSDL2)
 
 add_executable(connect4 "src/main.cpp" "include/grid.hpp" "src/grid.cpp" "include/game.hpp" "src/game.cpp")
 
 target_compile_features(connect4 PUBLIC cxx_std_20)
 
-target_include_directories(connect4 PUBLIC "include/" "include/ai")
+target_include_directories(connect4 PUBLIC "include/" ${SDL2_INCLUDE_DIRS})
 
 target_link_libraries(connect4
-	PRIVATE
-	$<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
-	$<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
+	PRIVATE ${SDL2_LIBRARIES}
 )
