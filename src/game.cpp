@@ -54,7 +54,7 @@ void Game::run()
 
 void Game::draw_grid() const
 {
-  SDL_SetRenderDrawColor(m_renderer, 10, 20, 30, 255);
+  SDL_SetRenderDrawColor(m_renderer, 1, 82, 187, 255);
   SDL_RenderClear(m_renderer);
 
   constexpr int padding = 2;
@@ -70,15 +70,15 @@ void Game::draw_grid() const
       switch (m_grid.get_disc(row, column)) {
         using enum Disc;
         case RED: {
-          draw_disc(m_renderer, x, y, disc_width, disc_height, SDL_Color {255, 0, 0, 255});
+          draw_disc(m_renderer, x, y, disc_width, disc_height, SDL_Color {219, 31, 4, 255});
           break;
         }
         case YELLOW: {
-          draw_disc(m_renderer, x, y, disc_width, disc_height, SDL_Color {255, 255, 0, 255});
+          draw_disc(m_renderer, x, y, disc_width, disc_height, SDL_Color {245, 214, 2, 255});
           break;
         }
         case EMPTY: {
-          draw_disc(m_renderer, x, y, disc_width, disc_height, SDL_Color {40, 50, 60, 255});
+          draw_disc(m_renderer, x, y, disc_width, disc_height, SDL_Color {2, 66, 163, 255});
           break;
         }
       }
